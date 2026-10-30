@@ -1,6 +1,23 @@
+# Dependências
 node_modules/
+**/node_modules/
+
+# Variáveis de ambiente
 .env
 .env.*
 !.env.example
+**/.env
+**/.env.*
+**/!.env.example
+
+# Builds
 dist/
 build/
+**/dist/
+**/build/
+
+# Logs
+*.log
+
+# Backups locais
+backend-backup.bundle

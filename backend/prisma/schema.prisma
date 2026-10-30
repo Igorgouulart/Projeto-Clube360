@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  senhaHash    String        @map("senha_hash")
+  nome         String
+  perfil       PerfilUsuario @default(OPERADOR)
+  ativo        Boolean       @default(true)
+  criadoEm     DateTime      @default(now()) @map("criado_em")
+  atualizadoEm DateTime      @updatedAt @map("atualizado_em")
+  ultimoLogin  DateTime?     @map("ultimo_login")
+
+  logsAuditoria  LogAuditoria[]
+  sessoesCriadas Sessao[]       @relation("SessaoCriadaPor")
+
+  @@map("usuarios")
+}
+
+model Socio {
+  id           String      @id @default(uuid())
+  nome         String
+  documento    String      @unique
+  telefone     String?
+  email        String?
+  endereco     String?
+  status       StatusSocio @default(ATIVO)
+  dataCadastro DateTime    @default(now()) @map("data_cadastro")
+  atualizadoEm DateTime    @updatedAt @map("atualizado_em")
+
+  sessoes Sessao[]
+
+  @@index([nome])
+  @@index([documento])
+  @@index([status])
+  @@map("socios")
+}
+
+model Sessao {
+  id          String       @id @default(uuid())
+  pessoaNome  String       @map("pessoa_nome")
+  socioId     String?      @map("socio_id")
+  dataEntrada DateTime     @default(now()) @map("data_entrada")
+  dataSaida   DateTime?    @map("data_saida")
+  status      StatusSessao @default(ATIVA)
+  observacoes String?
+  criadoPor   String       @map("criado_por")
+
+  socio    Socio?   @relation(fields: [socioId], references: [id])
+  operador Usuario  @relation("SessaoCriadaPor", fields: [criadoPor], references: [id])
+  comandas Comanda[]
+
+  @@index([status])
+  @@index([dataEntrada])
+  @@map("sessoes")
+}
+
+model Produto {
+  id           String   @id @default(uuid())
+  nome         String
+  preco        Decimal  @db.Decimal(10, 2)
+  categoria    String?
+  descricao    String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  itensComanda ItemComanda[]
+
+  @@index([categoria])
+  @@index([ativo])
+  @@map("produtos")
+}
+
+model Comanda {
+  id           String        @id @default(uuid())
+  sessaoId     String        @map("sessao_id")
+  status       StatusComanda @default(ABERTA)
+  valorTotal   Decimal       @default(0) @db.Decimal(10, 2) @map("valor_total")
+  criadoEm     DateTime      @default(now()) @map("criado_em")
+  atualizadoEm DateTime      @updatedAt @map("atualizado_em")
+
+  sessao     Sessao        @relation(fields: [sessaoId], references: [id])
+  itens      ItemComanda[]
+  pagamentos Pagamento[]
+
+  @@map("comandas")
+}
+
+model ItemComanda {
+  id            String  @id @default(uuid())
+  comandaId     String  @map("comanda_id")
+  produtoId     String  @map("produto_id")
+  quantidade    Int     @default(1)
+  valorUnitario Decimal @db.Decimal(10, 2) @map("valor_unitario")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+
+  comanda Comanda @relation(fields: [comandaId], references: [id])
+  produto Produto @relation(fields: [produtoId], references: [id])
+
+  @@map("itens_comanda")
+}
+
+model Pagamento {
+  id            String          @id @default(uuid())
+  comandaId     String          @map("comanda_id")
+  valor         Decimal         @db.Decimal(10, 2)
+  metodo        MetodoPagamento @default(DINHEIRO)
+  dataPagamento DateTime        @default(now()) @map("data_pagamento")
+  criadoEm     DateTime        @default(now()) @map("criado_em")
+
+  comanda Comanda @relation(fields: [comandaId], references: [id])
+
+  @@map("pagamentos")
+}
+
+model LogAuditoria {
+  id          String   @id @default(uuid())
+  usuarioId   String   @map("usuario_id")
+  acao        String
+  entidade    String
+  entidadeId  String?  @map("entidade_id")
+  dadosAntes  Json?    @map("dados_antes")
+  dadosDepois Json?    @map("dados_depois")
+  ip          String?
+  userAgent   String?  @map("user_agent")
+  criadoEm   DateTime @default(now()) @map("criado_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId])
+  @@index([entidade, entidadeId])
+  @@index([criadoEm])
+  @@map("logs_auditoria")
+}
+
+enum PerfilUsuario {
+  ADMIN
+  GERENTE
+  OPERADOR
+}
+
+enum StatusSocio {
+  ATIVO
+  INADIMPLENTE
+  INATIVO
+}
+
+enum StatusSessao {
+  ATIVA
+  FINALIZADA
+}
+
+enum StatusComanda {
+  ABERTA
+  FECHADA
+  PAGA
+}
+
+enum MetodoPagamento {
+  DINHEIRO
+  CARTAO_DEBITO
+  CARTAO_CREDITO
+  PIX
+  CORTESIA
+}
