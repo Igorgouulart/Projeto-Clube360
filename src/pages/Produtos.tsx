@@ -37,12 +37,12 @@ export default function Produtos() {
     setEditingProduto(produto);
     setFormData({
       nome: produto.nome,
-      preco: produto.preco,
+      preco: Number(produto.preco),
       categoria: produto.categoria ?? '',
       descricao: produto.descricao ?? '',
       ativo: produto.ativo,
     });
-    setPrecoStr(produto.preco.toFixed(2).replace('.', ','));
+    setPrecoStr(Number(produto.preco).toFixed(2).replace('.', ','));
     setDialogOpen(true);
   };
 
