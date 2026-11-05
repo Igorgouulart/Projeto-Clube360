@@ -1,3 +1,5 @@
+// IMPORTANTE: manter este import como o PRIMEIRO. Ele carrega o .env antes dos demais modulos.
+import './config/load-env';
 import app from './app';
 import { prisma } from './database/prisma';
 
